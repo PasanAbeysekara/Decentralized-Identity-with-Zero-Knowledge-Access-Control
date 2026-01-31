@@ -9,7 +9,9 @@ pragma solidity ^0.8.24;
 abstract contract ZKVerifier {
     /**
      * @dev Verify a zero-knowledge proof
-     * @param proof The proof data
+     * @param a First proof component
+     * @param b Second proof component
+     * @param c Third proof component
      * @param input Public inputs to the proof
      * @return bool True if the proof is valid
      */
