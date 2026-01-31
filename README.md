@@ -34,7 +34,7 @@ A complete blockchain-based decentralized identity platform that enables users t
 └── scripts/                # Deployment and utility scripts
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -127,7 +127,7 @@ npm run frontend:dev
 - Backend API: http://localhost:3001
 - API Health Check: http://localhost:3001/health
 
-## 📝 Usage Guide
+## Usage Guide
 
 ### Creating a DID
 
@@ -171,7 +171,7 @@ const proof = await zkProofAPI.ageVerification({
 4. Submit request
 5. Access granted if proof is valid
 
-## 🧪 Testing
+## Testing
 
 ### Run Contract Tests
 
@@ -191,7 +191,7 @@ npm run test:coverage
 npm run test:contracts
 ```
 
-## 📦 Deployment
+## Deployment
 
 ### Deploy to Testnet (Sepolia)
 
