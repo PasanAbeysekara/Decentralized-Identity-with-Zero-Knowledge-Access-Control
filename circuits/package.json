@@ -1,0 +1,17 @@
+{
+  "name": "did-zk-circuits",
+  "version": "1.0.0",
+  "description": "Zero-knowledge proof circuits for decentralized identity",
+  "scripts": {
+    "compile": "./compile.sh",
+    "setup": "./setup.sh",
+    "test": "node test/circuit-test.js"
+  },
+  "dependencies": {
+    "circomlib": "^2.0.5",
+    "snarkjs": "^0.7.3"
+  },
+  "devDependencies": {
+    "circom_tester": "^0.0.19"
+  }
+}
