@@ -216,10 +216,22 @@ router.delete('/revoke', async (req, res) => {
  */
 router.get('/history/:requester', async (req, res) => {
   try {
-    const { requester } = req.params;
+    let { requester } = req.params;
+
+    // If requester is a DID, extract the address
+    if (requester.startsWith('did:ethr:')) {
+      requester = requester.replace('did:ethr:', '');
+    }
 
     const { zkAccessControl } = getContracts();
-    const history = await zkAccessControl.getAccessHistory(requester);
+    
+    let history = [];
+    try {
+      history = await zkAccessControl.getAccessHistory(requester);
+    } catch (error) {
+      // If the call fails (e.g., empty data), return empty history
+      console.log('No access history found for requester:', requester);
+    }
 
     res.json({
       success: true,
