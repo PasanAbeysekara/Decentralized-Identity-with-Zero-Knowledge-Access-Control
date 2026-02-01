@@ -93,7 +93,12 @@ router.post('/create', validateDIDCreation, async (req, res) => {
 
   } catch (error) {
     console.error('DID creation error:', error);
-    res.status(500).json({ error: 'Failed to create DID' });
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    res.status(500).json({ error: 'Failed to create DID', details: error.message });
   }
 });
 

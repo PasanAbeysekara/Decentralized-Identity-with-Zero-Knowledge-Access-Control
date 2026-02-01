@@ -21,11 +21,11 @@ const DIDSchema = new mongoose.Schema({
     required: true
   },
   publicKeys: [{
-    id: String,
-    type: String,
-    controller: String,
-    publicKeyHex: String,
-    created: Date,
+    id: { type: String },
+    type: { type: String },
+    controller: { type: String },
+    publicKeyHex: { type: String },
+    created: { type: Date },
     revoked: { type: Boolean, default: false }
   }],
   authentication: [String],

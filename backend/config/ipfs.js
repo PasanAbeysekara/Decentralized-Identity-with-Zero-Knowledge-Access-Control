@@ -1,6 +1,7 @@
 // Note: ipfs-http-client is deprecated. Using mock implementation for development.
 // For production, consider using Helia or Pinata API directly.
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
 // Mock IPFS client for development (avoids Node.js compatibility issues)
 const getIPFSClient = () => {
