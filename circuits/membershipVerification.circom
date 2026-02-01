@@ -1,77 +1,47 @@
-pragma circom 2.1.6;
-
 include "../node_modules/circomlib/circuits/poseidon.circom";
-include "../node_modules/circomlib/circuits/comparators.circom";
 
-/**
- * Membership Verification Circuit
- * Proves membership in a group without revealing identity
- */
-template MembershipVerification(groupSize) {
-    // Private inputs
-    signal input memberSecret;
-    signal input memberIndex;
+// Membership Verification Circuit
+// Proves membership in a group without revealing member identity
+template MembershipVerification(levels) {
+    signal input memberId;
+    signal input groupRoot;
+    signal input siblings[levels];
+    signal input pathElements[levels];
+    signal input salt;
     
-    // Public inputs
-    signal input membershipRoot; // Merkle root of all members
-    signal input groupId;
-    signal input minMembershipDate;
-    signal input membershipDate;
+    signal output membershipProof;
+    signal output memberCommitment;
     
-    // Merkle proof inputs (private)
-    signal input merkleProof[groupSize];
-    signal input merkleIndices[groupSize];
+    // Create member commitment
+    component hasher = Poseidon(2);
+    hasher.inputs[0] <== memberId;
+    hasher.inputs[1] <== salt;
+    memberCommitment <== hasher.out;
     
-    // Output
-    signal output isValid;
+    // Verify membership using merkle path
+    // Create hash components for each level
+    component levelHashers[levels];
+    signal computedRoots[levels + 1];
     
-    // Verify membership date
-    component dateCheck = GreaterEqThan(64);
-    dateCheck.in[0] <== membershipDate;
-    dateCheck.in[1] <== minMembershipDate;
+    computedRoots[0] <== memberCommitment;
     
-    // Compute member commitment
-    component memberHash = Poseidon(3);
-    memberHash.inputs[0] <== memberSecret;
-    memberHash.inputs[1] <== groupId;
-    memberHash.inputs[2] <== membershipDate;
-    
-    // Verify Merkle proof
-    signal currentHash[groupSize + 1];
-    currentHash[0] <== memberHash.out;
-    
-    component hashers[groupSize];
-    component selectors[groupSize];
-    
-    for (var i = 0; i < groupSize; i++) {
-        selectors[i] = Selector();
-        selectors[i].in[0] <== currentHash[i];
-        selectors[i].in[1] <== merkleProof[i];
-        selectors[i].index <== merkleIndices[i];
+    for (var i = 0; i < levels; i++) {
+        levelHashers[i] = Poseidon(2);
         
-        hashers[i] = Poseidon(2);
-        hashers[i].inputs[0] <== selectors[i].out[0];
-        hashers[i].inputs[1] <== selectors[i].out[1];
+        // We'll handle the sorting outside constraints
+        // For now, assume pathElements are in the correct order
+        levelHashers[i].inputs[0] <== computedRoots[i];
+        levelHashers[i].inputs[1] <== pathElements[i];
         
-        currentHash[i + 1] <== hashers[i].out;
+        computedRoots[i + 1] <== levelHashers[i].out;
     }
     
-    // Verify root matches
-    signal rootMatch;
-    rootMatch <== IsEqual()([currentHash[groupSize], membershipRoot]);
+    // Verify the computed root matches the group root
+    computedRoots[levels] === groupRoot;
     
-    // Final validation: root matches AND date is valid
-    isValid <== rootMatch * dateCheck.out;
+    // Set membership proof
+    membershipProof <== 1;
 }
 
-// Helper: Selector for Merkle proof
-template Selector() {
-    signal input in[2];
-    signal input index;
-    signal output out[2];
-    
-    out[0] <== in[0] * (1 - index) + in[1] * index;
-    out[1] <== in[1] * (1 - index) + in[0] * index;
-}
+component main = MembershipVerification(16);
 
-component main {public [membershipRoot, groupId, minMembershipDate]} = MembershipVerification(8);

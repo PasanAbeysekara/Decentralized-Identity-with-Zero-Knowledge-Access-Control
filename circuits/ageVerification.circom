@@ -1,63 +1,61 @@
-pragma circom 2.1.6;
-
 include "../node_modules/circomlib/circuits/comparators.circom";
 include "../node_modules/circomlib/circuits/poseidon.circom";
 
-/**
- * Age Verification Circuit
- * Proves that a user is above a certain age without revealing their actual age or birthdate
- */
+// Age Verification Circuit
+// Proves that age >= minAge without revealing actual birthdate
 template AgeVerification() {
-    // Private inputs
     signal input birthYear;
     signal input birthMonth;
     signal input birthDay;
-    signal input salt; // For privacy
-    
-    // Public inputs
     signal input currentYear;
     signal input currentMonth;
     signal input currentDay;
     signal input minAge;
-    signal input credentialHash; // Hash of the credential
+    signal input salt;  // For privacy
     
-    // Output
-    signal output isValid;
+    signal output ageProof;
+    signal output commitment;
     
-    // Components for comparisons
-    component yearCheck = GreaterEqThan(32);
-    component monthCheck = GreaterEqThan(32);
-    component dayCheck = GreaterEqThan(32);
+    // Calculate age
+    signal yearDiff;
+    yearDiff <== currentYear - birthYear;
     
-    // Calculate age in years
-    var ageYears = currentYear - birthYear;
+    // Check if birthday has passed this year
+    signal monthPassed;
+    component monthComp = GreaterEqThan(8);
+    monthComp.in[0] <== currentMonth;
+    monthComp.in[1] <== birthMonth;
+    monthPassed <== monthComp.out;
     
-    // Adjust age if birthday hasn't occurred this year
-    var birthdayPassed = 0;
-    if (currentMonth > birthMonth) {
-        birthdayPassed = 1;
-    } else if (currentMonth == birthMonth && currentDay >= birthDay) {
-        birthdayPassed = 1;
-    }
+    signal dayPassed;
+    component dayComp = GreaterEqThan(8);
+    dayComp.in[0] <== currentDay;
+    dayComp.in[1] <== birthDay;
+    dayPassed <== dayComp.out;
     
-    var actualAge = birthdayPassed == 1 ? ageYears : ageYears - 1;
+    signal birthdayPassed;
+    birthdayPassed <== monthPassed * dayPassed;
     
-    // Check if age meets minimum requirement
-    yearCheck.in[0] <== actualAge;
-    yearCheck.in[1] <== minAge;
+    // Actual age
+    signal age;
+    age <== yearDiff - 1 + birthdayPassed;
     
-    // Verify credential hash (proves ownership without revealing data)
+    // Verify age >= minAge
+    component ageCheck = GreaterEqThan(8);
+    ageCheck.in[0] <== age;
+    ageCheck.in[1] <== minAge;
+    ageProof <== ageCheck.out;
+    
+    // Create commitment to hide birthdate
     component hasher = Poseidon(4);
     hasher.inputs[0] <== birthYear;
     hasher.inputs[1] <== birthMonth;
     hasher.inputs[2] <== birthDay;
     hasher.inputs[3] <== salt;
+    commitment <== hasher.out;
     
-    // Ensure the hash matches
-    credentialHash === hasher.out;
-    
-    // Output validation result
-    isValid <== yearCheck.out;
+    // Ensure proof is valid
+    ageProof === 1;
 }
 
-component main {public [currentYear, currentMonth, currentDay, minAge, credentialHash]} = AgeVerification();
+component main = AgeVerification();
