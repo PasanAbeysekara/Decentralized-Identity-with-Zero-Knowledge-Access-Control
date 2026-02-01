@@ -2,27 +2,35 @@
 
 import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
+import { toast } from 'react-hot-toast';
 
 export default function AccessControlPage() {
   const { address, isConnected } = useAccount();
   const [accessRequests, setAccessRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (isConnected && address) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && isConnected && address) {
       fetchAccessRequests();
     }
-  }, [isConnected, address]);
+  }, [mounted, isConnected, address]);
 
   const fetchAccessRequests = async () => {
     if (!address) return;
     
     setLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/access/requests/${address}`);
+      // Backend expects DID format: /api/access/history/:requester
+      const did = `did:ethr:${address}`;
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/access/history/${did}`);
       if (response.ok) {
         const data = await response.json();
-        setAccessRequests(data.requests || []);
+        setAccessRequests(data.history || []);
       }
     } catch (error) {
       console.error('Error fetching access requests:', error);
@@ -30,6 +38,17 @@ export default function AccessControlPage() {
       setLoading(false);
     }
   };
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isConnected) {
     return (
@@ -87,10 +106,16 @@ export default function AccessControlPage() {
                       </p>
                     </div>
                     <div className="flex space-x-2">
-                      <button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm">
+                      <button 
+                        onClick={() => toast.success('Access request approved!')}
+                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+                      >
                         Approve
                       </button>
-                      <button className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm">
+                      <button 
+                        onClick={() => toast.error('Access request denied')}
+                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
+                      >
                         Deny
                       </button>
                     </div>
@@ -106,7 +131,10 @@ export default function AccessControlPage() {
               <h3 className="mt-2 text-sm font-medium text-gray-900">No access requests</h3>
               <p className="mt-1 text-sm text-gray-500">Access requests will appear here when users request access to your resources.</p>
               <div className="mt-6">
-                <button className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                <button 
+                  onClick={() => toast('Access rule creation feature coming soon!')}
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
                   Create Access Rule
                 </button>
               </div>

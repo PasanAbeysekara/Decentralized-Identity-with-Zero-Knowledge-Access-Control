@@ -2,24 +2,32 @@
 
 import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
+import { toast } from 'react-hot-toast';
 
 export default function ZKProofPage() {
   const { address, isConnected } = useAccount();
   const [proofs, setProofs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (isConnected && address) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && isConnected && address) {
       fetchProofs();
     }
-  }, [isConnected, address]);
+  }, [mounted, isConnected, address]);
 
   const fetchProofs = async () => {
     if (!address) return;
     
     setLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/zkproof/${address}`);
+      // Backend expects DID format: /api/zkproof/prover/:prover
+      const did = `did:ethr:${address}`;
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/zkproof/prover/${did}`);
       if (response.ok) {
         const data = await response.json();
         setProofs(data.proofs || []);
@@ -30,6 +38,17 @@ export default function ZKProofPage() {
       setLoading(false);
     }
   };
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isConnected) {
     return (
@@ -53,7 +72,10 @@ export default function ZKProofPage() {
                 Prove attributes like age or credentials without revealing actual data
               </p>
             </div>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+            <button 
+              onClick={() => toast('Proof generation feature coming soon!')}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
               Create Proof
             </button>
           </div>
@@ -121,7 +143,10 @@ export default function ZKProofPage() {
               <h3 className="mt-2 text-sm font-medium text-gray-900">No proofs created yet</h3>
               <p className="mt-1 text-sm text-gray-500">Create your first zero-knowledge proof to get started.</p>
               <div className="mt-6">
-                <button className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                <button 
+                  onClick={() => toast('Proof generation feature coming soon!')}
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
                   Create Your First Proof
                 </button>
               </div>

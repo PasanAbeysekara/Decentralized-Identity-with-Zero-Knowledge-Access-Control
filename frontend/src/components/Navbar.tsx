@@ -4,11 +4,17 @@ import Link from 'next/link';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { WalletIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
+import { useState, useEffect } from 'react';
 
 export default function Navbar() {
   const { address, isConnected } = useAccount();
   const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleConnect = async () => {
     try {
@@ -57,8 +63,16 @@ export default function Navbar() {
           </div>
 
           {/* Wallet Connection */}
-          <div>
-            {isConnected && address ? (
+          <div suppressHydrationWarning>
+            {!mounted ? (
+              <button
+                className="btn-primary flex items-center gap-2 opacity-50"
+                disabled
+              >
+                <WalletIcon className="w-5 h-5" />
+                Connect Wallet
+              </button>
+            ) : isConnected && address ? (
               <div className="flex items-center gap-3">
                 <span className="text-sm text-gray-600">{formatAddress(address)}</span>
                 <button

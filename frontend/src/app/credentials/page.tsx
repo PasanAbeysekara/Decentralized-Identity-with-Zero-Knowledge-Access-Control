@@ -2,24 +2,32 @@
 
 import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
+import { toast } from 'react-hot-toast';
 
 export default function CredentialsPage() {
   const { address, isConnected } = useAccount();
   const [credentials, setCredentials] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (isConnected && address) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && isConnected && address) {
       fetchCredentials();
     }
-  }, [isConnected, address]);
+  }, [mounted, isConnected, address]);
 
   const fetchCredentials = async () => {
     if (!address) return;
     
     setLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/credentials/holder/${address}`);
+      // Backend expects DID format: /api/credentials/subject/:did
+      const did = `did:ethr:${address}`;
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/credentials/subject/${did}`);
       if (response.ok) {
         const data = await response.json();
         setCredentials(data.credentials || []);
@@ -30,6 +38,17 @@ export default function CredentialsPage() {
       setLoading(false);
     }
   };
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isConnected) {
     return (
@@ -48,7 +67,10 @@ export default function CredentialsPage() {
         <div className="bg-white rounded-lg shadow-xl p-8">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-gray-900">My Credentials</h1>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+            <button 
+              onClick={() => toast('Credential request feature coming soon!')}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
               Request Credential
             </button>
           </div>
@@ -79,10 +101,16 @@ export default function CredentialsPage() {
                     Issued by: {credential.issuer?.substring(0, 10)}...
                   </p>
                   <div className="flex space-x-2">
-                    <button className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm">
+                    <button 
+                      onClick={() => toast('Viewing credential details...')}
+                      className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm"
+                    >
                       View Details
                     </button>
-                    <button className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">
+                    <button 
+                      onClick={() => toast('Proof generation feature coming soon!')}
+                      className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                    >
                       Create Proof
                     </button>
                   </div>
@@ -97,7 +125,10 @@ export default function CredentialsPage() {
               <h3 className="mt-2 text-sm font-medium text-gray-900">No credentials</h3>
               <p className="mt-1 text-sm text-gray-500">Get started by requesting your first credential.</p>
               <div className="mt-6">
-                <button className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+                <button 
+                  onClick={() => toast('Credential request feature coming soon!')}
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                >
                   Request Credential
                 </button>
               </div>
