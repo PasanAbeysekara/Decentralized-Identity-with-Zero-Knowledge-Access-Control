@@ -153,7 +153,7 @@ export default function CredentialsPage() {
                     value={requestForm.issuerDID}
                     onChange={(e) => setRequestForm({...requestForm, issuerDID: e.target.value})}
                     placeholder="did:ethr:0x..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
                     required
                   />
                 </div>
@@ -164,7 +164,7 @@ export default function CredentialsPage() {
                   <select
                     value={requestForm.credentialType}
                     onChange={(e) => setRequestForm({...requestForm, credentialType: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
                   >
                     <option value="AgeCredential">Age Credential</option>
                     <option value="EducationCredential">Education Credential</option>
@@ -179,7 +179,7 @@ export default function CredentialsPage() {
                     value={requestForm.claims}
                     onChange={(e) => setRequestForm({...requestForm, claims: e.target.value})}
                     placeholder='{"age": 25, "verified": true}'
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
                     rows={3}
                     required
                   />
@@ -216,7 +216,7 @@ export default function CredentialsPage() {
                       type="number"
                       value={proofForm.birthYear}
                       onChange={(e) => setProofForm({...proofForm, birthYear: parseInt(e.target.value)})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 bg-white"
                       required
                     />
                   </div>
@@ -230,7 +230,7 @@ export default function CredentialsPage() {
                       onChange={(e) => setProofForm({...proofForm, birthMonth: parseInt(e.target.value)})}
                       min="1"
                       max="12"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 bg-white"
                       required
                     />
                   </div>
@@ -244,7 +244,7 @@ export default function CredentialsPage() {
                       onChange={(e) => setProofForm({...proofForm, birthDay: parseInt(e.target.value)})}
                       min="1"
                       max="31"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 bg-white"
                       required
                     />
                   </div>

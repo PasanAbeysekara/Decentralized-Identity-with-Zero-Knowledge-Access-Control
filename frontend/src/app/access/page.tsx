@@ -152,7 +152,7 @@ export default function AccessControlPage() {
                       value={policyForm.policyId}
                       onChange={(e) => setPolicyForm({...policyForm, policyId: e.target.value})}
                       placeholder="Leave empty for auto-generation"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
                     />
                   </div>
                   <div>
@@ -164,7 +164,7 @@ export default function AccessControlPage() {
                       value={policyForm.resourceId}
                       onChange={(e) => setPolicyForm({...policyForm, resourceId: e.target.value})}
                       placeholder="Leave empty for auto-generation"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
                     />
                   </div>
                 </div>
@@ -177,7 +177,7 @@ export default function AccessControlPage() {
                     value={policyForm.resourceName}
                     onChange={(e) => setPolicyForm({...policyForm, resourceName: e.target.value})}
                     placeholder="e.g., Premium Content, VIP Section"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
                     required
                   />
                 </div>
@@ -189,7 +189,7 @@ export default function AccessControlPage() {
                     <select
                       value={policyForm.requiredCredentialType}
                       onChange={(e) => setPolicyForm({...policyForm, requiredCredentialType: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
                     >
                       <option value="AgeCredential">Age Credential</option>
                       <option value="EducationCredential">Education Credential</option>
@@ -205,7 +205,7 @@ export default function AccessControlPage() {
                       value={policyForm.minAge}
                       onChange={(e) => setPolicyForm({...policyForm, minAge: parseInt(e.target.value)})}
                       min="0"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
                     />
                   </div>
                 </div>
@@ -218,7 +218,7 @@ export default function AccessControlPage() {
                     value={policyForm.verifierContract}
                     onChange={(e) => setPolicyForm({...policyForm, verifierContract: e.target.value})}
                     placeholder="0x..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
                     required
                   />
                 </div>
