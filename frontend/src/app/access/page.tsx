@@ -3,12 +3,23 @@
 import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { toast } from 'react-hot-toast';
+import { accessAPI } from '@/lib/api';
 
 export default function AccessControlPage() {
   const { address, isConnected } = useAccount();
   const [accessRequests, setAccessRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [showPolicyForm, setShowPolicyForm] = useState(false);
+  const [policyForm, setPolicyForm] = useState({
+    policyId: '',
+    resourceId: '',
+    resourceName: '',
+    requiredCredentialType: 'AgeCredential',
+    minAge: 18,
+    requireMembership: false,
+    verifierContract: '0x0000000000000000000000000000000000000000'
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -36,6 +47,58 @@ export default function AccessControlPage() {
       console.error('Error fetching access requests:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreatePolicy = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!address) return;
+
+    try {
+      const policyId = policyForm.policyId || `policy-${Date.now()}`;
+      const resourceId = policyForm.resourceId || `resource-${Date.now()}`;
+      
+      await accessAPI.createPolicy({
+        policyId,
+        resourceId,
+        requiredCredentialType: policyForm.requiredCredentialType,
+        minAge: policyForm.minAge,
+        requireMembership: policyForm.requireMembership,
+        verifierContract: policyForm.verifierContract
+      });
+      
+      toast.success('Access policy created successfully!');
+      setShowPolicyForm(false);
+      setPolicyForm({
+        policyId: '',
+        resourceId: '',
+        resourceName: '',
+        requiredCredentialType: 'AgeCredential',
+        minAge: 18,
+        requireMembership: false,
+        verifierContract: '0x0000000000000000000000000000000000000000'
+      });
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to create policy');
+    }
+  };
+
+  const handleApproveAccess = async (request: any) => {
+    try {
+      // In a real implementation, this would call the smart contract
+      toast.success('Access approved! (Feature requires smart contract integration)');
+      fetchAccessRequests();
+    } catch (error: any) {
+      toast.error('Failed to approve access');
+    }
+  };
+
+  const handleDenyAccess = async (request: any) => {
+    try {
+      toast.error('Access denied');
+      fetchAccessRequests();
+    } catch (error: any) {
+      toast.error('Failed to deny access');
     }
   };
 
@@ -67,10 +130,128 @@ export default function AccessControlPage() {
         <div className="bg-white rounded-lg shadow-xl p-8">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-gray-900">Access Control</h1>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-              Grant Access
+            <button 
+              onClick={() => setShowPolicyForm(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Create Access Policy
             </button>
           </div>
+
+          {showPolicyForm && (
+            <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
+              <h3 className="text-lg font-semibold mb-4">Create New Access Policy</h3>
+              <form onSubmit={handleCreatePolicy} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Policy ID
+                    </label>
+                    <input
+                      type="text"
+                      value={policyForm.policyId}
+                      onChange={(e) => setPolicyForm({...policyForm, policyId: e.target.value})}
+                      placeholder="Leave empty for auto-generation"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Resource ID
+                    </label>
+                    <input
+                      type="text"
+                      value={policyForm.resourceId}
+                      onChange={(e) => setPolicyForm({...policyForm, resourceId: e.target.value})}
+                      placeholder="Leave empty for auto-generation"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Resource Name
+                  </label>
+                  <input
+                    type="text"
+                    value={policyForm.resourceName}
+                    onChange={(e) => setPolicyForm({...policyForm, resourceName: e.target.value})}
+                    placeholder="e.g., Premium Content, VIP Section"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Required Credential Type
+                    </label>
+                    <select
+                      value={policyForm.requiredCredentialType}
+                      onChange={(e) => setPolicyForm({...policyForm, requiredCredentialType: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="AgeCredential">Age Credential</option>
+                      <option value="EducationCredential">Education Credential</option>
+                      <option value="MembershipCredential">Membership Credential</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Minimum Age
+                    </label>
+                    <input
+                      type="number"
+                      value={policyForm.minAge}
+                      onChange={(e) => setPolicyForm({...policyForm, minAge: parseInt(e.target.value)})}
+                      min="0"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Verifier Contract Address
+                  </label>
+                  <input
+                    type="text"
+                    value={policyForm.verifierContract}
+                    onChange={(e) => setPolicyForm({...policyForm, verifierContract: e.target.value})}
+                    placeholder="0x..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="requireMembership"
+                    checked={policyForm.requireMembership}
+                    onChange={(e) => setPolicyForm({...policyForm, requireMembership: e.target.checked})}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="requireMembership" className="ml-2 block text-sm text-gray-900">
+                    Require membership verification
+                  </label>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Create Policy
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowPolicyForm(false)}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
 
           <div className="mb-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
@@ -107,13 +288,13 @@ export default function AccessControlPage() {
                     </div>
                     <div className="flex space-x-2">
                       <button 
-                        onClick={() => toast.success('Access request approved!')}
+                        onClick={() => handleApproveAccess(request)}
                         className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
                       >
                         Approve
                       </button>
                       <button 
-                        onClick={() => toast.error('Access request denied')}
+                        onClick={() => handleDenyAccess(request)}
                         className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
                       >
                         Deny
@@ -132,7 +313,7 @@ export default function AccessControlPage() {
               <p className="mt-1 text-sm text-gray-500">Access requests will appear here when users request access to your resources.</p>
               <div className="mt-6">
                 <button 
-                  onClick={() => toast('Access rule creation feature coming soon!')}
+                  onClick={() => setShowPolicyForm(true)}
                   className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
                 >
                   Create Access Rule

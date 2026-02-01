@@ -3,12 +3,27 @@
 import { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { toast } from 'react-hot-toast';
+import { credentialsAPI, zkProofAPI } from '@/lib/api';
 
 export default function CredentialsPage() {
   const { address, isConnected } = useAccount();
   const [credentials, setCredentials] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [showRequestForm, setShowRequestForm] = useState(false);
+  const [showProofForm, setShowProofForm] = useState(false);
+  const [selectedCredential, setSelectedCredential] = useState<any>(null);
+  const [requestForm, setRequestForm] = useState({
+    issuerDID: '',
+    credentialType: 'AgeCredential',
+    claims: '{}'
+  });
+  const [proofForm, setProofForm] = useState({
+    birthYear: new Date().getFullYear() - 25,
+    birthMonth: 1,
+    birthDay: 1,
+    salt: Math.floor(Math.random() * 1000000)
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -36,6 +51,56 @@ export default function CredentialsPage() {
       console.error('Error fetching credentials:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRequestCredential = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!address) return;
+
+    try {
+      const subjectDID = `did:ethr:${address}`;
+      const claims = JSON.parse(requestForm.claims);
+      
+      await credentialsAPI.issue({
+        issuerDID: requestForm.issuerDID,
+        subjectDID,
+        credentialType: requestForm.credentialType,
+        claims
+      });
+      
+      toast.success('Credential request submitted successfully!');
+      setShowRequestForm(false);
+      setRequestForm({ issuerDID: '', credentialType: 'AgeCredential', claims: '{}' });
+      fetchCredentials();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to request credential');
+    }
+  };
+
+  const handleGenerateProof = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!address || !selectedCredential) return;
+
+    try {
+      const currentDate = new Date();
+      const proof = await zkProofAPI.ageVerification({
+        birthYear: proofForm.birthYear,
+        birthMonth: proofForm.birthMonth,
+        birthDay: proofForm.birthDay,
+        salt: proofForm.salt,
+        currentYear: currentDate.getFullYear(),
+        currentMonth: currentDate.getMonth() + 1,
+        currentDay: currentDate.getDate(),
+        minAge: 18,
+        credentialHash: selectedCredential.credentialHash || '0x0'
+      });
+      
+      toast.success('ZK Proof generated successfully!');
+      setShowProofForm(false);
+      console.log('Generated proof:', proof);
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to generate proof');
     }
   };
 
@@ -68,12 +133,143 @@ export default function CredentialsPage() {
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-gray-900">My Credentials</h1>
             <button 
-              onClick={() => toast('Credential request feature coming soon!')}
+              onClick={() => setShowRequestForm(true)}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
               Request Credential
             </button>
           </div>
+
+          {showRequestForm && (
+            <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
+              <h3 className="text-lg font-semibold mb-4">Request New Credential</h3>
+              <form onSubmit={handleRequestCredential} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Issuer DID
+                  </label>
+                  <input
+                    type="text"
+                    value={requestForm.issuerDID}
+                    onChange={(e) => setRequestForm({...requestForm, issuerDID: e.target.value})}
+                    placeholder="did:ethr:0x..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Credential Type
+                  </label>
+                  <select
+                    value={requestForm.credentialType}
+                    onChange={(e) => setRequestForm({...requestForm, credentialType: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="AgeCredential">Age Credential</option>
+                    <option value="EducationCredential">Education Credential</option>
+                    <option value="MembershipCredential">Membership Credential</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Claims (JSON)
+                  </label>
+                  <textarea
+                    value={requestForm.claims}
+                    onChange={(e) => setRequestForm({...requestForm, claims: e.target.value})}
+                    placeholder='{"age": 25, "verified": true}'
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    rows={3}
+                    required
+                  />
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Submit Request
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowRequestForm(false)}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {showProofForm && selectedCredential && (
+            <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
+              <h3 className="text-lg font-semibold mb-4">Generate Zero-Knowledge Proof</h3>
+              <form onSubmit={handleGenerateProof} className="space-y-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Birth Year
+                    </label>
+                    <input
+                      type="number"
+                      value={proofForm.birthYear}
+                      onChange={(e) => setProofForm({...proofForm, birthYear: parseInt(e.target.value)})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Birth Month
+                    </label>
+                    <input
+                      type="number"
+                      value={proofForm.birthMonth}
+                      onChange={(e) => setProofForm({...proofForm, birthMonth: parseInt(e.target.value)})}
+                      min="1"
+                      max="12"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Birth Day
+                    </label>
+                    <input
+                      type="number"
+                      value={proofForm.birthDay}
+                      onChange={(e) => setProofForm({...proofForm, birthDay: parseInt(e.target.value)})}
+                      min="1"
+                      max="31"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      required
+                    />
+                  </div>
+                </div>
+                <p className="text-sm text-gray-600">
+                  This will generate a proof that you are over 18 without revealing your exact birthdate.
+                </p>
+                <div className="flex space-x-2">
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    Generate Proof
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowProofForm(false); setSelectedCredential(null); }}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
 
           {loading ? (
             <div className="text-center py-12">
@@ -102,13 +298,19 @@ export default function CredentialsPage() {
                   </p>
                   <div className="flex space-x-2">
                     <button 
-                      onClick={() => toast('Viewing credential details...')}
+                      onClick={() => {
+                        console.log('Credential details:', credential);
+                        toast.success('Check console for details');
+                      }}
                       className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm"
                     >
                       View Details
                     </button>
                     <button 
-                      onClick={() => toast('Proof generation feature coming soon!')}
+                      onClick={() => {
+                        setSelectedCredential(credential);
+                        setShowProofForm(true);
+                      }}
                       className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
                     >
                       Create Proof
@@ -126,7 +328,7 @@ export default function CredentialsPage() {
               <p className="mt-1 text-sm text-gray-500">Get started by requesting your first credential.</p>
               <div className="mt-6">
                 <button 
-                  onClick={() => toast('Credential request feature coming soon!')}
+                  onClick={() => setShowRequestForm(true)}
                   className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
                 >
                   Request Credential
