@@ -16,6 +16,9 @@ const errorHandler = require('./middleware/errorHandler');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust proxy for GitHub Codespaces
+app.set('trust proxy', true);
+
 // Connect to MongoDB
 connectDB();
 
@@ -32,7 +35,11 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Trust proxy for GitHub Codespaces
+  validate: { trustProxy: false }
 });
 app.use('/api/', limiter);
 

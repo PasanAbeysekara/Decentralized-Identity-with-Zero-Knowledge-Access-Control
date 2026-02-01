@@ -24,6 +24,7 @@ export default function CredentialsPage() {
     birthDay: 1,
     salt: Math.floor(Math.random() * 1000000)
   });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -82,8 +83,10 @@ export default function CredentialsPage() {
     e.preventDefault();
     if (!address || !selectedCredential) return;
 
+    setSubmitting(true);
     try {
       const currentDate = new Date();
+      const proverDID = `did:ethr:${address}`;
       const proof = await zkProofAPI.ageVerification({
         birthYear: proofForm.birthYear,
         birthMonth: proofForm.birthMonth,
@@ -93,14 +96,25 @@ export default function CredentialsPage() {
         currentMonth: currentDate.getMonth() + 1,
         currentDay: currentDate.getDate(),
         minAge: 18,
-        credentialHash: selectedCredential.credentialHash || '0x0'
+        prover: proverDID,
+        credentialId: selectedCredential.credentialId
       });
       
-      toast.success('ZK Proof generated successfully!');
-      setShowProofForm(false);
-      console.log('Generated proof:', proof);
+      if (proof.verified) {
+        toast.success(`✅ Zero-knowledge proof generated and saved! (Proof ID: ${proof.proofId?.substring(0, 8)}...)`);
+        console.log('Generated proof:', proof);
+        setShowProofForm(false);
+        setSelectedCredential(null);
+        // Reset form
+        setProofForm({ birthYear: 2000, birthMonth: 1, birthDay: 1, salt: Math.floor(Math.random() * 1000000) });
+      } else {
+        toast.error('Proof verification failed');
+      }
     } catch (error: any) {
+      console.error('Proof generation error:', error);
       toast.error(error.response?.data?.error || 'Failed to generate proof');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -251,18 +265,21 @@ export default function CredentialsPage() {
                 </div>
                 <p className="text-sm text-gray-600">
                   This will generate a proof that you are over 18 without revealing your exact birthdate.
+                  The proof will be saved and visible in the <a href="/zkproof" className="text-blue-600 hover:underline">ZK Proofs</a> section.
                 </p>
                 <div className="flex space-x-2">
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    disabled={submitting}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
-                    Generate Proof
+                    {submitting ? 'Generating...' : 'Generate Proof'}
                   </button>
                   <button
                     type="button"
                     onClick={() => { setShowProofForm(false); setSelectedCredential(null); }}
                     className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                    disabled={submitting}
                   >
                     Cancel
                   </button>

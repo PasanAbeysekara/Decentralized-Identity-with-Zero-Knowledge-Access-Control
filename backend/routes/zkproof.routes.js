@@ -208,10 +208,10 @@ router.get('/prover/:prover', async (req, res) => {
  */
 router.post('/age-verification', async (req, res) => {
   try {
-    const { birthYear, birthMonth, birthDay, salt, currentYear, currentMonth, currentDay, minAge, credentialHash } = req.body;
+    const { birthYear, birthMonth, birthDay, salt, currentYear, currentMonth, currentDay, minAge, prover, credentialId } = req.body;
 
     // Validate inputs
-    if (!birthYear || !birthMonth || !birthDay || !salt || !currentYear || !currentMonth || !currentDay || !minAge || !credentialHash) {
+    if (!birthYear || !birthMonth || !birthDay || !salt || !currentYear || !currentMonth || !currentDay || !minAge || !prover) {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
 
@@ -223,8 +223,7 @@ router.post('/age-verification', async (req, res) => {
       currentYear,
       currentMonth,
       currentDay,
-      minAge,
-      credentialHash
+      minAge
     };
 
     const wasmFile = path.join(CIRCUITS_PATH, 'ageVerification_js/ageVerification.wasm');
@@ -237,9 +236,34 @@ router.post('/age-verification', async (req, res) => {
     const vKey = JSON.parse(await fs.readFile(vKeyFile, 'utf8'));
     const verified = await snarkjs.groth16.verify(vKey, publicSignals, proof);
 
+    // Save proof to database
+    const proofId = crypto.randomUUID();
+    const zkProof = new ZKProof({
+      proofId,
+      proofType: 'ageVerification',
+      prover,
+      proof: {
+        pi_a: proof.pi_a,
+        pi_b: proof.pi_b,
+        pi_c: proof.pi_c,
+        protocol: proof.protocol || 'groth16',
+        curve: proof.curve || 'bn128'
+      },
+      publicSignals,
+      verificationResult: verified,
+      resourceId: credentialId,
+      metadata: {
+        minAge,
+        verifiedAt: new Date().toISOString()
+      }
+    });
+
+    await zkProof.save();
+
     res.json({
       success: true,
       verified,
+      proofId,
       proof,
       publicSignals,
       message: verified ? 'Age verification successful' : 'Age verification failed'

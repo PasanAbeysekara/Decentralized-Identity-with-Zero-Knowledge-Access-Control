@@ -58,16 +58,26 @@ export default function AccessControlPage() {
       const policyId = policyForm.policyId || `policy-${Date.now()}`;
       const resourceId = policyForm.resourceId || `resource-${Date.now()}`;
       
-      await accessAPI.createPolicy({
+      // Use the user's DID as verifier if not specified
+      const verifierContract = policyForm.verifierContract === '0x0000000000000000000000000000000000000000' 
+        ? `did:ethr:${address}` 
+        : policyForm.verifierContract;
+      
+      const policyData = {
         policyId,
         resourceId,
         requiredCredentialType: policyForm.requiredCredentialType,
         minAge: policyForm.minAge,
         requireMembership: policyForm.requireMembership,
-        verifierContract: policyForm.verifierContract
-      });
+        verifierContract
+      };
+
+      console.log('Creating policy:', policyData);
       
-      toast.success('Access policy created successfully!');
+      const result = await accessAPI.createPolicy(policyData);
+      
+      console.log('Policy created:', result);
+      toast.success(`✅ Access policy created! (ID: ${policyId.substring(0, 20)}...)`);
       setShowPolicyForm(false);
       setPolicyForm({
         policyId: '',
@@ -79,6 +89,7 @@ export default function AccessControlPage() {
         verifierContract: '0x0000000000000000000000000000000000000000'
       });
     } catch (error: any) {
+      console.error('Policy creation error:', error);
       toast.error(error.response?.data?.error || 'Failed to create policy');
     }
   };
@@ -131,7 +142,14 @@ export default function AccessControlPage() {
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-gray-900">Access Control</h1>
             <button 
-              onClick={() => setShowPolicyForm(true)}
+              onClick={() => {
+                setShowPolicyForm(true);
+                // Pre-fill verifier contract with user's DID
+                setPolicyForm({
+                  ...policyForm,
+                  verifierContract: `did:ethr:${address}`
+                });
+              }}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
               Create Access Policy

@@ -118,6 +118,12 @@ router.post('/policy', async (req, res) => {
       verifierContract 
     } = req.body;
 
+    // Strip did:ethr: prefix from verifier contract address if present
+    let verifierAddress = verifierContract;
+    if (verifierContract && verifierContract.startsWith('did:ethr:')) {
+      verifierAddress = verifierContract.replace('did:ethr:', '');
+    }
+
     const { zkAccessControl } = getContracts();
 
     const tx = await zkAccessControl.createPolicy(
@@ -126,7 +132,7 @@ router.post('/policy', async (req, res) => {
       requiredCredentialType || '',
       minAge || 0,
       requireMembership || false,
-      verifierContract
+      verifierAddress
     );
 
     const receipt = await tx.wait();

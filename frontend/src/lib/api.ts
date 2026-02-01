@@ -114,7 +114,8 @@ export const zkProofAPI = {
     currentMonth: number;
     currentDay: number;
     minAge: number;
-    credentialHash: string;
+    prover: string;
+    credentialId?: string;
   }) => {
     const response = await api.post('/zkproof/age-verification', data);
     return response.data;
