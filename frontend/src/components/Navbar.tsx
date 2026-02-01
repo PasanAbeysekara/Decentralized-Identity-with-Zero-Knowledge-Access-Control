@@ -1,20 +1,30 @@
 'use client';
 
 import Link from 'next/link';
-import { useWalletStore } from '@/store/walletStore';
+import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { WalletIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 
 export default function Navbar() {
-  const { address, isConnected, connectWallet, disconnectWallet } = useWalletStore();
+  const { address, isConnected } = useAccount();
+  const { connect, connectors, isPending } = useConnect();
+  const { disconnect } = useDisconnect();
 
   const handleConnect = async () => {
     try {
-      await connectWallet();
-      toast.success('Wallet connected successfully');
+      // Find injected connector (MetaMask)
+      const injectedConnector = connectors.find(c => c.id === 'injected') || connectors[0];
+      if (injectedConnector) {
+        connect({ connector: injectedConnector });
+      }
     } catch (error: any) {
       toast.error(error.message || 'Failed to connect wallet');
     }
+  };
+
+  const handleDisconnect = () => {
+    disconnect();
+    toast.success('Wallet disconnected');
   };
 
   const formatAddress = (addr: string) => {
@@ -52,7 +62,7 @@ export default function Navbar() {
               <div className="flex items-center gap-3">
                 <span className="text-sm text-gray-600">{formatAddress(address)}</span>
                 <button
-                  onClick={disconnectWallet}
+                  onClick={handleDisconnect}
                   className="btn-secondary text-sm"
                 >
                   Disconnect
